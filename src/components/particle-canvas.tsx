@@ -19,6 +19,7 @@ import {
   type DotSystem,
   type Shockwave,
 } from "@/lib/particle-system";
+import { useIsMobile } from "@/lib/use-is-mobile";
 
 interface ParticleCanvasProps {
   imageSrc: string;
@@ -40,6 +41,7 @@ export default function ParticleCanvas({
   const blueNoiseRef = useRef<Uint8Array | null>(null);
   const prevConfigRef = useRef<string>("");
   const gridDimsRef = useRef({ w: GRID_SIZE, h: GRID_SIZE });
+  const isMobile = useIsMobile();
 
   const params = useDialKit("Dither Playground", {
     algorithm: {
@@ -184,21 +186,20 @@ export default function ParticleCanvas({
       const ox = Math.round((rect.width - gw * s) / 2);
       const oy = Math.round((rect.height - gh * s) / 2);
 
-      const isMobile = "ontouchstart" in window && window.innerWidth < 768;
-      const dotScale = isMobile ? 8 : params.dotScale;
+      const dotScale = isMobile ? params.dotScale * 0.8 : params.dotScale;
 
       systemRef.current = createDotSystem(positions, s, dotScale, ox, oy);
       startLoop();
     },
-    [algorithm, params.scale, params.dotScale, params.image.contrast, params.image.gamma, params.image.blur, params.image.threshold, params.image.highlightsCompression, params.dither.errorStrength, params.dither.serpentine, params.shape.cornerRadius, params.invert, params.linearDemo, startLoop]
+    [algorithm, params.scale, params.dotScale, params.image.contrast, params.image.gamma, params.image.blur, params.image.threshold, params.image.highlightsCompression, params.dither.errorStrength, params.dither.serpentine, params.shape.cornerRadius, params.invert, params.linearDemo, isMobile, startLoop]
   );
 
   useEffect(() => {
-    const configKey = JSON.stringify([imageSrc, algorithm, params.scale, params.dotScale, params.image, params.dither, params.shape, params.invert, params.linearDemo]);
+    const configKey = JSON.stringify([imageSrc, algorithm, params.scale, params.dotScale, params.image, params.dither, params.shape, params.invert, params.linearDemo, isMobile]);
     if (configKey === prevConfigRef.current) return;
     prevConfigRef.current = configKey;
     rebuildParticles(imageSrc);
-  }, [imageSrc, algorithm, rebuildParticles, params.scale, params.dotScale, params.image, params.dither, params.shape, params.invert, params.linearDemo]);
+  }, [imageSrc, algorithm, rebuildParticles, params.scale, params.dotScale, params.image, params.dither, params.shape, params.invert, params.linearDemo, isMobile]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -207,12 +208,25 @@ export default function ParticleCanvas({
     const ctx = canvas.getContext("2d")!;
     const dpr = window.devicePixelRatio || 1;
 
+    let resizeTimer: ReturnType<typeof setTimeout> | null = null;
+    let lastWidth = 0;
+    let lastHeight = 0;
+
     const handleResize = () => {
       const rect = canvas.getBoundingClientRect();
       canvas.width = rect.width * dpr;
       canvas.height = rect.height * dpr;
       const sys = systemRef.current;
       if (sys) renderDots(ctx, sys, params.invert, rect.width, rect.height, dpr);
+
+      const w = Math.round(rect.width);
+      const h = Math.round(rect.height);
+      if (lastWidth !== 0 && (w !== lastWidth || h !== lastHeight)) {
+        if (resizeTimer) clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => rebuildParticles(imageSrc), 200);
+      }
+      lastWidth = w;
+      lastHeight = h;
     };
 
     handleResize();
@@ -220,7 +234,6 @@ export default function ParticleCanvas({
     resizeObserver.observe(canvas);
 
     const handlePointerMove = (e: PointerEvent) => {
-      if (e.pointerType !== "mouse") return;
       const rect = canvas.getBoundingClientRect();
       mouseRef.current.x = e.clientX - rect.left;
       mouseRef.current.y = e.clientY - rect.top;
@@ -234,6 +247,11 @@ export default function ParticleCanvas({
       startLoop();
     };
 
+    const handlePointerCancel = () => {
+      mouseRef.current.active = false;
+      startLoop();
+    };
+
     const handlePointerUp = (e: PointerEvent) => {
       const rect = canvas.getBoundingClientRect();
       shockwavesRef.current.push({
@@ -241,22 +259,28 @@ export default function ParticleCanvas({
         y: e.clientY - rect.top,
         start: performance.now(),
       });
+      if (e.pointerType !== "mouse") {
+        mouseRef.current.active = false;
+      }
       startLoop();
     };
 
     canvas.addEventListener("pointermove", handlePointerMove);
     canvas.addEventListener("pointerleave", handlePointerLeave);
+    canvas.addEventListener("pointercancel", handlePointerCancel);
     canvas.addEventListener("pointerup", handlePointerUp);
 
     return () => {
       cancelAnimationFrame(animFrameRef.current);
       runningRef.current = false;
+      if (resizeTimer) clearTimeout(resizeTimer);
       resizeObserver.disconnect();
       canvas.removeEventListener("pointermove", handlePointerMove);
       canvas.removeEventListener("pointerleave", handlePointerLeave);
+      canvas.removeEventListener("pointercancel", handlePointerCancel);
       canvas.removeEventListener("pointerup", handlePointerUp);
     };
-  }, [params.invert, startLoop]);
+  }, [params.invert, startLoop, rebuildParticles, imageSrc]);
 
   const bg = params.invert ? "#ffffff" : "#0a0a0a";
 
