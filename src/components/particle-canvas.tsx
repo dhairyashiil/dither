@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useCallback } from "react";
-import { useDialKit } from "dialkit";
+// import { useDialKit } from "dialkit";
 import {
   type DitherAlgorithm,
   floydSteinberg,
@@ -22,22 +22,33 @@ import { useIsMobile } from "@/lib/use-is-mobile";
 
 interface ParticleCanvasProps {
   imageSrc: string;
-  onUploadRequest: () => void;
-  onLogoPresetChange: (src: string) => void;
 }
 
 const GRID_SIZE = 205;
 
-const LOGO_PRESETS = {
-  linear: "/linear-app-icon.png",
-  cube: "/CUBE_2D_LIGHT.png",
+/** Defaults that replaced the DialKit playground panel (see commented block below). */
+const PLAYGROUND_PARAMS = {
+  algorithm: "floyd-steinberg",
+  scale: 0.35,
+  dotScale: 1,
+  invert: true,
+  image: {
+    threshold: 181,
+    contrast: 5,
+    gamma: 0.8,
+    blur: 3.75,
+    highlightsCompression: 0,
+  },
+  dither: {
+    errorStrength: 1.0,
+    serpentine: true,
+  },
+  shape: {
+    cornerRadius: 0.28,
+  },
 } as const;
 
-export default function ParticleCanvas({
-  imageSrc,
-  onUploadRequest,
-  onLogoPresetChange,
-}: ParticleCanvasProps) {
+export default function ParticleCanvas({ imageSrc }: ParticleCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const systemRef = useRef<DotSystem | null>(null);
   const mouseRef = useRef({ x: 0, y: 0, active: false });
@@ -49,6 +60,9 @@ export default function ParticleCanvas({
   const gridDimsRef = useRef({ w: GRID_SIZE, h: GRID_SIZE });
   const isMobile = useIsMobile();
 
+  const params = PLAYGROUND_PARAMS;
+
+  /*
   const params = useDialKit("Dither Playground", {
     algorithm: {
       type: "select",
@@ -59,17 +73,11 @@ export default function ParticleCanvas({
     dotScale: [1, 0.5, 10, 0.5],
     invert: true,
 
-    logo: {
-      type: "select",
-      options: ["linear", "cube"],
-      default: "linear",
-    },
-
     image: {
       _collapsed: true,
       threshold: [181, 0, 255, 1],
-      contrast: [0, -100, 100, 1],
-      gamma: [1.03, 0.1, 3.0, 0.01],
+      contrast: [5, -100, 100, 1],
+      gamma: [0.8, 0.1, 3.0, 0.01],
       blur: [3.75, 0, 20, 0.25],
       highlightsCompression: [0, 0, 1, 0.01],
     },
@@ -91,14 +99,9 @@ export default function ParticleCanvas({
       if (action === "upload") onUploadRequest();
     },
   });
+  */
 
   const algorithm = params.algorithm as DitherAlgorithm;
-
-  useEffect(() => {
-    const key = params.logo as keyof typeof LOGO_PRESETS;
-    const path = LOGO_PRESETS[key] ?? LOGO_PRESETS.linear;
-    onLogoPresetChange(path);
-  }, [params.logo, onLogoPresetChange]);
 
   const startLoop = useCallback(() => {
     if (runningRef.current) return;
@@ -136,7 +139,7 @@ export default function ParticleCanvas({
     };
 
     animFrameRef.current = requestAnimationFrame(tick);
-  }, [params.invert]);
+  }, [params]);
 
   const rebuildParticles = useCallback(
     async (src: string) => {
@@ -197,15 +200,15 @@ export default function ParticleCanvas({
       systemRef.current = createDotSystem(positions, s, dotScale, ox, oy);
       startLoop();
     },
-    [algorithm, params.scale, params.dotScale, params.image.contrast, params.image.gamma, params.image.blur, params.image.threshold, params.image.highlightsCompression, params.dither.errorStrength, params.dither.serpentine, params.shape.cornerRadius, params.invert, isMobile, startLoop]
+    [algorithm, params, isMobile, startLoop]
   );
 
   useEffect(() => {
-    const configKey = JSON.stringify([imageSrc, algorithm, params.scale, params.dotScale, params.image, params.dither, params.shape, params.invert, isMobile]);
+    const configKey = JSON.stringify([imageSrc, isMobile]);
     if (configKey === prevConfigRef.current) return;
     prevConfigRef.current = configKey;
     rebuildParticles(imageSrc);
-  }, [imageSrc, algorithm, rebuildParticles, params.scale, params.dotScale, params.image, params.dither, params.shape, params.invert, isMobile]);
+  }, [imageSrc, rebuildParticles, isMobile]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -286,7 +289,7 @@ export default function ParticleCanvas({
       canvas.removeEventListener("pointercancel", handlePointerCancel);
       canvas.removeEventListener("pointerup", handlePointerUp);
     };
-  }, [params.invert, startLoop, rebuildParticles, imageSrc]);
+  }, [params, startLoop, rebuildParticles, imageSrc]);
 
   const bg = params.invert ? "#ffffff" : "#0a0a0a";
 
