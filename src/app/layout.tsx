@@ -10,7 +10,7 @@ const metadataBase = new URL(
 
 export const metadata: Metadata = {
   metadataBase,
-  title: "Dither Playground",
+  title: "Cal.com",
   description:
     "Upload a logo and watch it come alive as interactive dithered particles. Hover to push, click to explode.",
   icons: {
@@ -19,14 +19,14 @@ export const metadata: Metadata = {
     apple: "/cal-icon.png",
   },
   openGraph: {
-    title: "Dither Playground",
+    title: "Cal.com",
     description:
       "Upload a logo and watch it come alive as interactive dithered particles. Hover to push, click to explode.",
-    images: [{ url: "/cal-icon.png", width: 512, height: 512, alt: "Dither Playground" }],
+    images: [{ url: "/cal-icon.png", width: 512, height: 512, alt: "Cal.com" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Dither Playground",
+    title: "Cal.com",
     description:
       "Upload a logo and watch it come alive as interactive dithered particles. Hover to push, click to explode.",
     images: ["/cal-icon.png"],
