@@ -8,7 +8,8 @@ import {
   IconLink,
 } from "@tabler/icons-react";
 
-const iconClass = "h-4 w-4 text-neutral-500 dark:text-white";
+const iconClass =
+  "h-4 w-4 text-slate-600 transition-colors group-hover:text-orange-600";
 
 const navItems = [
   {

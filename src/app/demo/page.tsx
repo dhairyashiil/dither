@@ -7,7 +7,7 @@ export const metadata = {
 
 export default function DemoPage() {
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center bg-neutral-100 px-6 text-center dark:bg-neutral-950">
+    <div className="bg-site-chrome flex min-h-svh flex-col items-center justify-center px-6 text-center">
       <p className="text-lg text-neutral-600 dark:text-neutral-400">
         Demo page — navbar lives on the{" "}
         <Link

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { DialKitProvider } from "./dialkit-provider";
 
@@ -31,6 +31,12 @@ export const metadata: Metadata = {
       "Upload a logo and watch it come alive as interactive dithered particles. Hover to push, click to explode.",
     images: ["/cal-icon.png"],
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

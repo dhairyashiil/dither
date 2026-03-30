@@ -291,12 +291,8 @@ export default function ParticleCanvas({ imageSrc }: ParticleCanvasProps) {
     };
   }, [params, startLoop, rebuildParticles, imageSrc]);
 
+  /** Canvas fill only; page chrome stays `var(--site-chrome)` from globals (better mobile overscroll). */
   const bg = params.invert ? "#ffffff" : "#0a0a0a";
-
-  useEffect(() => {
-    document.documentElement.style.background = bg;
-    document.body.style.background = bg;
-  }, [bg]);
 
   return (
     <canvas
